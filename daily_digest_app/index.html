@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Daily Digest</title>
+
+<!-- PWA / iOS home screen -->
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Daily Digest">
+<meta name="theme-color" content="#000000">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  body {
+    background: #000;
+    color: #fff;
+    font-family: 'UnifrakturMaguntia', 'EB Garamond', Georgia, serif;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: calc(70px + var(--safe-top)) 24px calc(100px + var(--safe-bottom));
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 70px;
+  }
+
+  .app-title {
+    font-family: 'UnifrakturMaguntia', serif;
+    font-size: 52px;
+    color: #fff;
+    letter-spacing: 0.02em;
+    margin-bottom: 14px;
+    line-height: 1.1;
+  }
+
+  .date-display {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 15px;
+    color: #888;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .divider {
+    width: 120px;
+    height: 1px;
+    background: #333;
+    margin: 0 auto 70px;
+  }
+
+  .quote-card {
+    width: 100%;
+    max-width: 740px;
+    margin-bottom: 70px;
+  }
+
+  .card-label {
+    font-family: 'UnifrakturMaguntia', serif;
+    font-size: 28px;
+    color: #fff;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .card-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #333;
+  }
+
+  .quote-text {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 24px;
+    line-height: 1.75;
+    color: #fff;
+    font-style: italic;
+    margin-bottom: 14px;
+    font-weight: 400;
+  }
+
+  .quote-reference {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 14px;
+    color: #666;
+    letter-spacing: 0.1em;
+    margin-bottom: 36px;
+  }
+
+  .original-lang-block {
+    border-left: 1px solid #333;
+    padding-left: 22px;
+    margin-top: 4px;
+  }
+
+  .original-lang-label {
+    font-family: 'UnifrakturMaguntia', serif;
+    font-size: 16px;
+    color: #555;
+    margin-bottom: 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .original-lang-text {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 18px;
+    line-height: 1.75;
+    color: #777;
+    font-style: italic;
+  }
+
+  .section-sep {
+    width: 100%;
+    max-width: 740px;
+    height: 1px;
+    background: #1a1a1a;
+    margin-bottom: 70px;
+  }
+
+  @media (max-width: 600px) {
+    .app-title { font-size: 38px; }
+    .quote-text { font-size: 20px; }
+    .original-lang-text { font-size: 16px; }
+    .card-label { font-size: 22px; }
+    body { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="app-title">Daily Digest</div>
+  <div class="date-display" id="date-display"></div>
+</header>
+
+<div class="divider"></div>
+
+<div class="quote-card" id="bible-card">
+  <div class="card-label">Scripture</div>
+  <div class="quote-text" id="bible-english"></div>
+  <div class="quote-reference" id="bible-reference"></div>
+  <div class="original-lang-block">
+    <div class="original-lang-label" id="bible-lang-label"></div>
+    <div class="original-lang-text" id="bible-original"></div>
+  </div>
+</div>
+
+<div class="section-sep"></div>
+
+<div class="quote-card" id="nietzsche-card">
+  <div class="card-label">Nietzsche</div>
+  <div class="quote-text" id="nietzsche-english"></div>
+  <div class="quote-reference" id="nietzsche-reference"></div>
+  <div class="original-lang-block">
+    <div class="original-lang-label">Original German</div>
+    <div class="original-lang-text" id="nietzsche-original"></div>
+  </div>
+</div>
+
+<script>
+// ─── BIBLE VERSES (KJV + Original Language) ───────────────────────────────
+const bibleVerses = [
+  { english: "In the beginning God created the heaven and the earth.", ref: "Genesis 1:1", lang: "Hebrew", original: "בְּרֵאשִׁית בָּרָא אֱלֹהִים אֵת הַשָּׁמַיִם וְאֵת הָאָרֶץ" },
+  { english: "The LORD is my shepherd; I shall not want.", ref: "Psalm 23:1", lang: "Hebrew", original: "יְהוָה רֹעִי לֹא אֶחְסָר" },
+  { english: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.", ref: "John 3:16", lang: "Greek", original: "Οὕτως γὰρ ἠγάπησεν ὁ θεὸς τὸν κόσμον, ὥστε τὸν υἱὸν τὸν μονογενῆ ἔδωκεν, ἵνα πᾶς ὁ πιστεύων εἰς αὐτὸν μὴ ἀπόληται ἀλλʼ ἔχῃ ζωὴν αἰώνιον." },
+  { english: "Be still, and know that I am God.", ref: "Psalm 46:10", lang: "Hebrew", original: "הַרְפּוּ וּדְעוּ כִּי אָנֹכִי אֱלֹהִים" },
+  { english: "Trust in the LORD with all thine heart; and lean not unto thine own understanding.", ref: "Proverbs 3:5", lang: "Hebrew", original: "בְּטַח אֶל יְהוָה בְּכָל לִבֶּךָ וְאֶל בִּינָתְךָ אַל תִּשָּׁעֵן" },
+  { english: "I can do all things through Christ which strengtheneth me.", ref: "Philippians 4:13", lang: "Greek", original: "πάντα ἰσχύω ἐν τῷ ἐνδυναμοῦντί με Χριστῷ" },
+  { english: "And we know that all things work together for good to them that love God.", ref: "Romans 8:28", lang: "Greek", original: "οἴδαμεν δὲ ὅτι τοῖς ἀγαπῶσιν τὸν θεὸν πάντα συνεργεῖ εἰς ἀγαθόν" },
+  { english: "The fear of the LORD is the beginning of wisdom.", ref: "Proverbs 9:10", lang: "Hebrew", original: "תְּחִלַּת חָכְמָה יִרְאַת יְהוָה" },
+  { english: "Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me.", ref: "Psalm 23:4", lang: "Hebrew", original: "גַּם כִּי אֵלֵךְ בְּגֵיא צַלְמָוֶת לֹא אִירָא רָע כִּי אַתָּה עִמָּדִי" },
+  { english: "In all thy ways acknowledge him, and he shall direct thy paths.", ref: "Proverbs 3:6", lang: "Hebrew", original: "בְּכָל דְּרָכֶיךָ דָעֵהוּ וְהוּא יְיַשֵּׁר אֹרְחֹתֶיךָ" },
+  { english: "But they that wait upon the LORD shall renew their strength; they shall mount up with wings as eagles.", ref: "Isaiah 40:31", lang: "Hebrew", original: "וְקוֹיֵ יְהוָה יַחֲלִיפוּ כֹחַ יַעֲלוּ אֵבֶר כַּנְּשָׁרִים" },
+  { english: "The LORD is my light and my salvation; whom shall I fear?", ref: "Psalm 27:1", lang: "Hebrew", original: "יְהוָה אוֹרִי וְיִשְׁעִי מִמִּי אִירָא" },
+  { english: "And the Word was made flesh, and dwelt among us, full of grace and truth.", ref: "John 1:14", lang: "Greek", original: "Καὶ ὁ λόγος σὰρξ ἐγένετο καὶ ἐσκήνωσεν ἐν ἡμῖν, πλήρης χάριτος καὶ ἀληθείας" },
+  { english: "Come unto me, all ye that labour and are heavy laden, and I will give you rest.", ref: "Matthew 11:28", lang: "Greek", original: "Δεῦτε πρός με πάντες οἱ κοπιῶντες καὶ πεφορτισμένοι, κἀγὼ ἀναπαύσω ὑμᾶς" },
+  { english: "For I know the thoughts that I think toward you, saith the LORD, thoughts of peace, and not of evil.", ref: "Jeremiah 29:11", lang: "Hebrew", original: "כִּי אָנֹכִי יָדַעְתִּי אֶת הַמַּחֲשָׁבֹת אֲשֶׁר אָנֹכִי חֹשֵׁב עֲלֵיכֶם נְאֻם יְהוָה מַחְשְׁבוֹת שָׁלוֹם וְלֹא לְרָעָה" },
+  { english: "The LORD bless thee, and keep thee: the LORD make his face shine upon thee, and be gracious unto thee.", ref: "Numbers 6:24–25", lang: "Hebrew", original: "יְבָרֶכְךָ יְהוָה וְיִשְׁמְרֶךָ יָאֵר יְהוָה פָּנָיו אֵלֶיךָ וִיחֻנֶּךָּ" },
+  { english: "Create in me a clean heart, O God; and renew a right spirit within me.", ref: "Psalm 51:10", lang: "Hebrew", original: "לֵב טָהוֹר בְּרָא לִי אֱלֹהִים וְרוּחַ נָכוֹן חַדֵּשׁ בְּקִרְבִּי" },
+  { english: "Love is patient, love is kind; it does not envy, it does not boast.", ref: "1 Corinthians 13:4", lang: "Greek", original: "Ἡ ἀγάπη μακροθυμεῖ, χρηστεύεται· ἡ ἀγάπη οὐ ζηλοῖ, ἡ ἀγάπη οὐ περπερεύεται" },
+  { english: "Blessed are the pure in heart: for they shall see God.", ref: "Matthew 5:8", lang: "Greek", original: "μακάριοι οἱ καθαροὶ τῇ καρδίᾳ, ὅτι αὐτοὶ τὸν θεὸν ὄψονται" },
+  { english: "The LORD is nigh unto them that are of a broken heart; and saveth such as be of a contrite spirit.", ref: "Psalm 34:18", lang: "Hebrew", original: "קָרוֹב יְהוָה לְנִשְׁבְּרֵי לֵב וְאֶת דַּכְּאֵי רוּחַ יוֹשִׁיעַ" },
+  { english: "Blessed are the meek: for they shall inherit the earth.", ref: "Matthew 5:5", lang: "Greek", original: "μακάριοι οἱ πραεῖς, ὅτι αὐτοὶ κληρονομήσουσιν τὴν γῆν" },
+  { english: "Where thou diest, will I die, and there will I be buried: the LORD do so to me, and more also, if ought but death part thee and me.", ref: "Ruth 1:17", lang: "Hebrew", original: "בַּאֲשֶׁר תָּמוּתִי אָמוּת וְשָׁם אֶקָּבֵר כֹּה יַעֲשֶׂה יְהוָה לִי וְכֹה יֹסִיף כִּי הַמָּוֶת יַפְרִיד בֵּינִי וּבֵינֵךְ" },
+  { english: "For what is a man profited, if he shall gain the whole world, and lose his own soul?", ref: "Matthew 16:26", lang: "Greek", original: "τί γὰρ ὠφεληθήσεται ἄνθρωπος ἐὰν τὸν κόσμον ὅλον κερδήσῃ τὴν δὲ ψυχὴν αὐτοῦ ζημιωθῇ;" },
+  { english: "Seek ye first the kingdom of God, and his righteousness; and all these things shall be added unto you.", ref: "Matthew 6:33", lang: "Greek", original: "ζητεῖτε δὲ πρῶτον τὴν βασιλείαν τοῦ θεοῦ καὶ τὴν δικαιοσύνην αὐτοῦ, καὶ ταῦτα πάντα προστεθήσεται ὑμῖν" },
+  { english: "He hath shewed thee, O man, what is good; and what doth the LORD require of thee, but to do justly, and to love mercy, and to walk humbly with thy God?", ref: "Micah 6:8", lang: "Hebrew", original: "הִגִּיד לְךָ אָדָם מַה טּוֹב וּמָה יְהוָה דּוֹרֵשׁ מִמְּךָ כִּי אִם עֲשׂוֹת מִשְׁפָּט וְאַהֲבַת חֶסֶד וְהַצְנֵעַ לֶכֶת עִם אֱלֹהֶיךָ" },
+  { english: "The heavens declare the glory of God; and the firmament sheweth his handywork.", ref: "Psalm 19:1", lang: "Hebrew", original: "הַשָּׁמַיִם מְסַפְּרִים כְּבוֹד אֵל וּמַעֲשֵׂה יָדָיו מַגִּיד הָרָקִיעַ" },
+  { english: "Have I not commanded thee? Be strong and of a good courage; be not afraid, neither be thou dismayed.", ref: "Joshua 1:9", lang: "Hebrew", original: "הֲלֹא צִוִּיתִיךָ חֲזַק וֶאֱמָץ אַל תַּעֲרֹץ וְאַל תֵּחָת" },
+  { english: "Ask, and it shall be given you; seek, and ye shall find; knock, and it shall be opened unto you.", ref: "Matthew 7:7", lang: "Greek", original: "Αἰτεῖτε καὶ δοθήσεται ὑμῖν· ζητεῖτε καὶ εὑρήσετε· κρούετε καὶ ἀνοιγήσεται ὑμῖν" },
+  { english: "The LORD is my rock, and my fortress, and my deliverer; my God, my strength, in whom I will trust.", ref: "Psalm 18:2", lang: "Hebrew", original: "יְהוָה סַלְעִי וּמְצוּדָתִי וּמְפַלְטִי אֵלִי צוּרִי אֶחֱסֶה בּוֹ" },
+  { english: "Vanity of vanities, saith the Preacher; all is vanity.", ref: "Ecclesiastes 1:2", lang: "Hebrew", original: "הֲבֵל הֲבָלִים אָמַר קֹהֶלֶת הֲבֵל הֲבָלִים הַכֹּל הָבֶל" },
+  { english: "For by grace are ye saved through faith; and that not of yourselves: it is the gift of God.", ref: "Ephesians 2:8", lang: "Greek", original: "τῇ γὰρ χάριτί ἐστε σεσῳσμένοι διὰ πίστεως· καὶ τοῦτο οὐκ ἐξ ὑμῶν, θεοῦ τὸ δῶρον" },
+  { english: "Thou wilt keep him in perfect peace, whose mind is stayed on thee: because he trusteth in thee.", ref: "Isaiah 26:3", lang: "Hebrew", original: "יֵצֶר סָמוּךְ תִּצֹּר שָׁלוֹם שָׁלוֹם כִּי בְךָ בָּטוּחַ" },
+  { english: "And God saw every thing that he had made, and, behold, it was very good.", ref: "Genesis 1:31", lang: "Hebrew", original: "וַיַּרְא אֱלֹהִים אֶת כָּל אֲשֶׁר עָשָׂה וְהִנֵּה טוֹב מְאֹד" },
+  { english: "What therefore God hath joined together, let not man put asunder.", ref: "Mark 10:9", lang: "Greek", original: "ὃ οὖν ὁ θεὸς συνέζευξεν, ἄνθρωπος μὴ χωριζέτω" },
+  { english: "For the LORD thy God is a consuming fire, even a jealous God.", ref: "Deuteronomy 4:24", lang: "Hebrew", original: "כִּי יְהוָה אֱלֹהֶיךָ אֵשׁ אֹכְלָה הוּא אֵל קַנָּא" },
+  { english: "I am the way, the truth, and the life: no man cometh unto the Father, but by me.", ref: "John 14:6", lang: "Greek", original: "Ἐγώ εἰμι ἡ ὁδὸς καὶ ἡ ἀλήθεια καὶ ἡ ζωή· οὐδεὶς ἔρχεται πρὸς τὸν πατέρα εἰ μὴ διʼ ἐμοῦ" },
+  { english: "Rejoice in the Lord always: and again I say, Rejoice.", ref: "Philippians 4:4", lang: "Greek", original: "Χαίρετε ἐν κυρίῳ πάντοτε· πάλιν ἐρῶ, χαίρετε" },
+  { english: "The LORD is righteous in all his ways, and holy in all his works.", ref: "Psalm 145:17", lang: "Hebrew", original: "צַדִּיק יְהוָה בְּכָל דְּרָכָיו וְחָסִיד בְּכָל מַעֲשָׂיו" },
+  { english: "Do not be overcome by evil, but overcome evil with good.", ref: "Romans 12:21", lang: "Greek", original: "μὴ νικῶ ὑπὸ τοῦ κακοῦ ἀλλὰ νίκα ἐν τῷ ἀγαθῷ τὸ κακόν" },
+  { english: "A soft answer turneth away wrath: but grievous words stir up anger.", ref: "Proverbs 15:1", lang: "Hebrew", original: "מַעֲנֶה רַּךְ יָשִׁיב חֵמָה וּדְבַר עֶצֶב יַעֲלֶה אָף" },
+  { english: "Even so faith, if it hath not works, is dead, being alone.", ref: "James 2:17", lang: "Greek", original: "οὕτως καὶ ἡ πίστις, ἐὰν μὴ ἔχῃ ἔργα, νεκρά ἐστιν καθ᾽ ἑαυτήν" },
+  { english: "I am fearfully and wonderfully made: marvellous are thy works; and that my soul knoweth right well.", ref: "Psalm 139:14", lang: "Hebrew", original: "אוֹדְךָ עַל כִּי נוֹרָאוֹת נִפְלֵיתִי נִפְלָאִים מַעֲשֶׂיךָ וְנַפְשִׁי יֹדַעַת מְאֹד" },
+  { english: "He that is slow to anger is better than the mighty; and he that ruleth his spirit than he that taketh a city.", ref: "Proverbs 16:32", lang: "Hebrew", original: "טוֹב אֶרֶךְ אַפַּיִם מִגִּבּוֹר וּמֹשֵׁל בְּרוּחוֹ מִלֹּכֵד עִיר" },
+  { english: "For where your treasure is, there will your heart be also.", ref: "Matthew 6:21", lang: "Greek", original: "ὅπου γάρ ἐστιν ὁ θησαυρός σου, ἐκεῖ ἔσται καὶ ἡ καρδία σου" },
+  { english: "The LORD openeth the eyes of the blind: the LORD raiseth them that are bowed down: the LORD loveth the righteous.", ref: "Psalm 146:8", lang: "Hebrew", original: "יְהוָה פֹּקֵחַ עִוְרִים יְהוָה זֹקֵף כְּפוּפִים יְהוָה אֹהֵב צַדִּיקִים" },
+  { english: "For the wisdom of this world is foolishness with God.", ref: "1 Corinthians 3:19", lang: "Greek", original: "ἡ γὰρ σοφία τοῦ κόσμου τούτου μωρία παρὰ τῷ θεῷ ἐστιν" },
+  { english: "He hath made every thing beautiful in his time: also he hath set the world in their heart.", ref: "Ecclesiastes 3:11", lang: "Hebrew", original: "אֶת הַכֹּל עָשָׂה יָפֶה בְעִתּוֹ גַּם אֶת הָעֹלָם נָתַן בְּלִבָּם" },
+  { english: "The tongue of the wise useth knowledge aright: but the mouth of fools poureth out foolishness.", ref: "Proverbs 15:2", lang: "Hebrew", original: "לְשׁוֹן חֲכָמִים תֵּיטִיב דָּעַת וּפִי כְסִילִים יַבִּיעַ אִוֶּלֶת" },
+  { english: "Set me as a seal upon thine heart, as a seal upon thine arm: for love is strong as death.", ref: "Song of Solomon 8:6", lang: "Hebrew", original: "שִׂימֵנִי כַחוֹתָם עַל לִבֶּךָ כַּחוֹתָם עַל זְרוֹעֶךָ כִּי עַזָּה כַמָּוֶת אַהֲבָה" },
+  { english: "And he said, My presence shall go with thee, and I will give thee rest.", ref: "Exodus 33:14", lang: "Hebrew", original: "וַיֹּאמַר פָּנַי יֵלֵכוּ וַהֲנִחֹתִי לָךְ" },
+  { english: "Now faith is the substance of things hoped for, the evidence of things not seen.", ref: "Hebrews 11:1", lang: "Greek", original: "Ἔστιν δὲ πίστις ἐλπιζομένων ὑπόστασις, πραγμάτων ἔλεγχος οὐ βλεπομένων" },
+  { english: "The spirit of man is the candle of the LORD, searching all the inward parts of the belly.", ref: "Proverbs 20:27", lang: "Hebrew", original: "נֵר יְהוָה נִשְׁמַת אָדָם חֹפֵשׂ כָּל חַדְרֵי בָטֶן" },
+  { english: "For God hath not given us the spirit of fear; but of power, and of love, and of a sound mind.", ref: "2 Timothy 1:7", lang: "Greek", original: "οὐ γὰρ ἔδωκεν ἡμῖν ὁ θεὸς πνεῦμα δειλίας ἀλλὰ δυνάμεως καὶ ἀγάπης καὶ σωφρονισμοῦ" },
+  { english: "For I am persuaded, that neither death, nor life, nor angels, nor principalities, nor powers... shall be able to separate us from the love of God.", ref: "Romans 8:38–39", lang: "Greek", original: "πέπεισμαι γὰρ ὅτι οὔτε θάνατος οὔτε ζωὴ... δυνήσεται ἡμᾶς χωρίσαι ἀπὸ τῆς ἀγάπης τοῦ θεοῦ" },
+  { english: "The LORD is gracious, and full of compassion; slow to anger, and of great mercy.", ref: "Psalm 145:8", lang: "Hebrew", original: "חַנּוּן וְרַחוּם יְהוָה אֶרֶךְ אַפַּיִם וּגְדָל חָסֶד" },
+  { english: "Greater love hath no man than this, that a man lay down his life for his friends.", ref: "John 15:13", lang: "Greek", original: "μείζονα ταύτης ἀγάπην οὐδεὶς ἔχει, ἵνα τις τὴν ψυχὴν αὐτοῦ θῇ ὑπὲρ τῶν φίλων αὐτοῦ" },
+  { english: "But seek ye first the kingdom of God.", ref: "Matthew 6:33", lang: "Greek", original: "ζητεῖτε δὲ πρῶτον τὴν βασιλείαν τοῦ θεοῦ" },
+  { english: "The LORD hath done great things for us; whereof we are glad.", ref: "Psalm 126:3", lang: "Hebrew", original: "הִגְדִּיל יְהוָה לַעֲשׂוֹת עִמָּנוּ הָיִינוּ שְׂמֵחִים" },
+  { english: "Do justly, love mercy, walk humbly with thy God.", ref: "Micah 6:8", lang: "Hebrew", original: "עֲשׂוֹת מִשְׁפָּט וְאַהֲבַת חֶסֶד וְהַצְנֵעַ לֶכֶת עִם אֱלֹהֶיךָ" },
+  { english: "Peace I leave with you, my peace I give unto you: not as the world giveth, give I unto you.", ref: "John 14:27", lang: "Greek", original: "εἰρήνην ἀφίημι ὑμῖν, εἰρήνην τὴν ἐμὴν δίδωμι ὑμῖν· οὐ καθὼς ὁ κόσμος δίδωσιν ἐγὼ δίδωμι ὑμῖν" },
+  { english: "The beginning of strife is as when one letteth out water: therefore leave off contention, before it be meddled with.", ref: "Proverbs 17:14", lang: "Hebrew", original: "פּוֹטֵר מַיִם רֵאשִׁית מָדוֹן וְלִפְנֵי הִתְגַּלַּע הָרִיב נְטוֹשׁ" },
+];
+
+// ─── NIETZSCHE MAXIMS (Kaufmann translation + Original German) ─────────────
+const nietzscheMaxims = [
+  { english: "God is dead. God remains dead. And we have killed him.", ref: "The Gay Science, §125", german: "Gott ist tot. Gott bleibt tot. Und wir haben ihn getötet." },
+  { english: "What does not kill me makes me stronger.", ref: "Twilight of the Idols, Maxims §8", german: "Was mich nicht umbringt, macht mich stärker." },
+  { english: "To live is to suffer, to survive is to find some meaning in the suffering.", ref: "Notebooks", german: "Leben heißt leiden, und überleben heißt im Leiden Sinn finden." },
+  { english: "He who has a why to live can bear almost any how.", ref: "Twilight of the Idols", german: "Wer ein Warum zum Leben hat, erträgt fast jedes Wie." },
+  { english: "Without music, life would be a mistake.", ref: "Twilight of the Idols, Maxims §33", german: "Ohne Musik wäre das Leben ein Irrtum." },
+  { english: "The higher we soar, the smaller we appear to those who cannot fly.", ref: "Thus Spoke Zarathustra", german: "Je höher wir steigen, desto kleiner erscheinen wir denen, die nicht fliegen können." },
+  { english: "One must still have chaos in oneself to be able to give birth to a dancing star.", ref: "Thus Spoke Zarathustra, Prologue §5", german: "Man muß noch Chaos in sich haben, um einen tanzenden Stern gebären zu können." },
+  { english: "Whoever fights monsters should see to it that in the process he does not become a monster.", ref: "Beyond Good and Evil, §146", german: "Wer mit Ungeheuern kämpft, mag zusehn, daß er dabei nicht selbst zum Ungeheuer wird." },
+  { english: "And if you gaze long into an abyss, the abyss also gazes into you.", ref: "Beyond Good and Evil, §146", german: "Und wenn du lange in einen Abgrund blickst, blickt der Abgrund auch in dich hinein." },
+  { english: "The secret for harvesting from existence the greatest fruitfulness and the greatest enjoyment is — to live dangerously!", ref: "The Gay Science, §283", german: "Das Geheimnis, um die größte Fruchtbarkeit und den größten Genuß vom Dasein einzuernten, heißt — gefährlich leben!" },
+  { english: "In individuals, insanity is rare; but in groups, parties, nations, and epochs it is the rule.", ref: "Beyond Good and Evil, §156", german: "Bei Individuen ist Irrsinn selten — aber bei Gruppen, Parteien, Völkern, Zeiten die Regel." },
+  { english: "The doer alone learneth.", ref: "Thus Spoke Zarathustra", german: "Der Tuende allein lernt." },
+  { english: "There are no facts, only interpretations.", ref: "Notebooks, 1886", german: "Es gibt keine Tatsachen, nur Interpretationen." },
+  { english: "I am not a man, I am dynamite.", ref: "Ecce Homo, §1", german: "Ich bin kein Mensch, ich bin Dynamit." },
+  { english: "The higher type of free men should be sought not in the good but in the evil quarter of the town.", ref: "Twilight of the Idols", german: "Den höheren freien Menschen suche man nicht in der guten, sondern im bösen Viertel der Stadt." },
+  { english: "That which is done out of love always takes place beyond good and evil.", ref: "Beyond Good and Evil, §153", german: "Was aus Liebe getan wird, geschieht immer jenseits von Gut und Böse." },
+  { english: "The most courageous act is still to think for yourself. Aloud.", ref: "The Gay Science", german: "Der mutigste Akt ist es noch immer, selbst zu denken. Laut." },
+  { english: "To forget one's purpose is the commonest form of stupidity.", ref: "Twilight of the Idols", german: "Seinen Zweck vergessen ist die gemeinste Form der Dummheit." },
+  { english: "Man must be surpassed.", ref: "Thus Spoke Zarathustra, Prologue §3", german: "Der Mensch ist etwas, das überwunden werden soll." },
+  { english: "Blessed are the sleepy ones: for they shall soon drop off.", ref: "Thus Spoke Zarathustra, 'On the Afterworldly'", german: "Glückselig die Schlummernden! denn sie werden bald einschlafen." },
+  { english: "Every profound thinker is more afraid of being understood than of being misunderstood.", ref: "Beyond Good and Evil, §290", german: "Jeder tiefe Denker fürchtet mehr, verstanden zu werden, als mißverstanden zu werden." },
+  { english: "Ah, women. They make the highs higher and the lows more frequent.", ref: "The Gay Science", german: "Ach, die Frauen. Sie machen das Hohe höher und das Häufige häufiger." },
+  { english: "One must pay dearly for immortality; one has to die several times while still alive.", ref: "Ecce Homo", german: "Man muß die Unsterblichkeit teuer bezahlen: man muß dafür mehrmals während des Lebens sterben." },
+  { english: "We love life, not because we are used to living but because we are used to loving.", ref: "Thus Spoke Zarathustra", german: "Wir lieben das Leben, nicht weil wir ans Leben gewöhnt, sondern weil wir ans Lieben gewöhnt sind." },
+  { english: "The overman... is the meaning of the earth.", ref: "Thus Spoke Zarathustra, Prologue §3", german: "Der Übermensch... ist der Sinn der Erde." },
+  { english: "Convictions are more dangerous foes of truth than lies.", ref: "Human, All Too Human, §483", german: "Überzeugungen sind gefährlichere Feinde der Wahrheit als Lügen." },
+  { english: "In the mountains of truth, you never climb in vain.", ref: "Human, All Too Human", german: "Im Gebirge der Wahrheit steigst du nie umsonst." },
+  { english: "Hope is the worst of evils, for it prolongs the torment of man.", ref: "Human, All Too Human, §71", german: "Die Hoffnung ist das schlimmste aller Übel, denn sie verlängert die Qual des Menschen." },
+  { english: "We should consider every day lost on which we have not danced at least once.", ref: "Thus Spoke Zarathustra", german: "Und überhaupt halte ich jeden Tag verloren, an dem ich nicht einmal getanzt habe." },
+  { english: "The higher man is distinguished from the lower by his fearlessness and his readiness to challenge misfortune.", ref: "The Will to Power", german: "Der höhere Mensch unterscheidet sich vom niedrigeren durch seine Furchtlosigkeit und sein Bereitschaft, dem Unglück zu begegnen." },
+  { english: "You have your way. I have my way. As for the right way, the correct way, the only way, it does not exist.", ref: "Thus Spoke Zarathustra", german: "Du hast deinen Weg. Ich habe meinen Weg. Was den richtigen, den korrekten, den einzigen Weg betrifft — den gibt es nicht." },
+  { english: "Silence is worse; all truths that are kept silent become poisonous.", ref: "Thus Spoke Zarathustra", german: "Das Schweigen ist schlimmer; alle verschwiegenen Wahrheiten werden giftig." },
+  { english: "One ought to hold on to one's heart; for if one lets it go, one soon loses control of the head too.", ref: "Beyond Good and Evil, §108", german: "Man soll am Herzen festhalten; denn wenn man es gehen läßt, verliert man bald auch den Kopf." },
+  { english: "To predict the behavior of ordinary people in advance, you only have to assume that they will always try to escape a disagreeable situation with the smallest possible expenditure of intelligence.", ref: "Notebooks", german: "Um das Verhalten gewöhnlicher Menschen vorauszusagen, braucht man nur anzunehmen, daß sie immer versuchen werden, einer unangenehmen Lage mit dem geringstmöglichen Aufwand an Intelligenz zu entkommen." },
+  { english: "The most spiritual men, as the strongest, find their happiness where others would find their destruction.", ref: "The Antichrist, §57", german: "Die geistigsten Menschen, als die Stärksten, finden ihr Glück dort, wo andere ihren Untergang fänden." },
+  { english: "That which requires the most courage: to know that one's will to truth is a will to power.", ref: "The Gay Science", german: "Was den meisten Mut erfordert: einzusehen, daß der eigene Wille zur Wahrheit ein Wille zur Macht ist." },
+  { english: "Man's maturity: to have regained the seriousness that he had as a child at play.", ref: "Beyond Good and Evil, §94", german: "Reife des Mannes: das heißt, den Ernst wiedergefunden haben, den man als Kind beim Spiele hatte." },
+  { english: "Thoughts are the shadows of our feelings — always darker, emptier, simpler.", ref: "The Gay Science, §179", german: "Gedanken sind die Schatten unserer Gefühle — immer dunkler, leerer, einfacher." },
+  { english: "Nothing on earth consumes a man more quickly than the passion of resentment.", ref: "Ecce Homo", german: "Nichts auf Erden verzehrt einen Menschen schneller als das Ressentiment." },
+  { english: "Distrust all in whom the impulse to punish is powerful.", ref: "Thus Spoke Zarathustra, 'On the Tarantulas'", german: "Mißtraut allen, in denen der Trieb zu strafen mächtig ist." },
+  { english: "We are unknown to ourselves, we men of knowledge — and with good reason.", ref: "On the Genealogy of Morality, Preface §1", german: "Wir sind uns unbekannt, wir Erkennenden, wir selbst uns selbst: das hat seinen guten Grund." },
+  { english: "All things are subject to interpretation; whichever interpretation prevails at a given time is a function of power and not truth.", ref: "Notebooks", german: "Alles unterliegt der Interpretation; welche Interpretation zu einer gegebenen Zeit herrscht, ist eine Frage der Macht und nicht der Wahrheit." },
+  { english: "It is not a lack of love, but a lack of friendship that makes unhappy marriages.", ref: "Human, All Too Human, §378", german: "Es ist nicht der Mangel an Liebe, sondern der Mangel an Freundschaft, der unglückliche Ehen macht." },
+  { english: "The secret of the greatest fruitfulness and the greatest enjoyment of existence is to live dangerously.", ref: "The Gay Science, §283", german: "Das Geheimnis größter Fruchtbarkeit und größten Genusses am Dasein ist — gefährlich zu leben." },
+  { english: "Whatever is done from love always occurs beyond good and evil.", ref: "Beyond Good and Evil, §153", german: "Was aus Liebe getan wird, das geschieht immer jenseits von Gut und Böse." },
+  { english: "The higher we rise, the more we learn to love what is far away.", ref: "Thus Spoke Zarathustra", german: "Je höher wir steigen, desto mehr lernen wir, das Ferne zu lieben." },
+  { english: "The more abstract the truth you wish to teach, the more you must allure the senses to it.", ref: "Beyond Good and Evil, §128", german: "Je abstrakter die Wahrheit ist, die du lehren willst, um so mehr mußt du noch die Sinne zu ihr verführen." },
+  { english: "A thought, even a possibility, can shatter and transform us.", ref: "The Gay Science, §324", german: "Ein Gedanke, selbst eine Möglichkeit, kann uns erschüttern und umgestalten." },
+  { english: "Many are stubborn in pursuit of the path they have chosen, few in pursuit of the goal.", ref: "Human, All Too Human, §483", german: "Viele sind hartnäckig in bezug auf den einmal eingeschlagenen Weg, wenige in bezug auf das Ziel." },
+  { english: "Sleeping is no mean art: for its sake one must stay awake all day.", ref: "Thus Spoke Zarathustra", german: "Das Schlafen ist keine geringe Kunst: man muß seinetwegen den ganzen Tag wach bleiben." },
+  { english: "We do not hate as long as we still attach a lesser value, but only when we attach an equal or greater value.", ref: "Human, All Too Human", german: "Wir hassen nicht, solange wir noch geringschätzen, sondern erst, wenn wir gleich oder höher schätzen." },
+  { english: "It is the image of the uncontrolled philosopher that frightens me.", ref: "Beyond Good and Evil", german: "Es ist das Bild des zügellosen Philosophen, das mich erschreckt." },
+  { english: "The higher the type of man, the greater his capacity for suffering.", ref: "The Will to Power", german: "Je höher der Typus Mensch, desto größer seine Leidensfähigkeit." },
+  { english: "To become what one is, one must not have the faintest notion what one is.", ref: "Ecce Homo, 'Why I Am So Clever' §9", german: "Um zu werden, was man ist, darf man nicht ahnen, was man ist." },
+  { english: "The secret of a full life is living and relating to others as if they might not be there tomorrow.", ref: "Thus Spoke Zarathustra", german: "Das Geheimnis eines erfüllten Lebens ist, mit anderen zu leben und zu fühlen, als ob sie vielleicht morgen nicht mehr da wären." },
+  { english: "There is always some madness in love. But there is also always some reason in madness.", ref: "Thus Spoke Zarathustra, 'On Reading and Writing'", german: "Es ist immer etwas Wahnsinn in der Liebe. Es ist aber immer auch etwas Vernunft im Wahnsinn." },
+  { english: "In praise there is more obtrusiveness than in blame.", ref: "Beyond Good and Evil, §173", german: "Im Lobe liegt mehr Zudringlichkeit als im Tadel." },
+  { english: "The press, the machine, the railway, the telegraph are premises whose thousand-year conclusion no one has yet dared to draw.", ref: "The Dawn, §175", german: "Die Presse, die Maschine, die Eisenbahn, der Telegraph sind Prämissen, deren tausendjährige Schlußfolgerung noch niemand zu ziehen gewagt hat." },
+  { english: "All truth is simple — is that not doubly a lie?", ref: "Twilight of the Idols, Maxims §4", german: "Alle Wahrheit ist einfach — ist das nicht zwiefach eine Lüge?" },
+  { english: "In the faces of the highest hope I always found the trembling of the deepest abysses.", ref: "The Gay Science", german: "In den Gesichtern der höchsten Hoffnung fand ich immer das Zittern der tiefsten Abgründe." },
+  { english: "The more you let yourself go, the less others let you go.", ref: "Beyond Good and Evil", german: "Je mehr du dich gehenlässt, desto weniger lassen dich die anderen gehen." },
+];
+
+// ─── DATE LOGIC ───────────────────────────────────────────────────────────────
+const now = new Date();
+
+const dayOfYear = (d) => {
+  const start = new Date(d.getFullYear(), 0, 0);
+  const diff = d - start + (start.getTimezoneOffset() - d.getTimezoneOffset()) * 60000;
+  return Math.floor(diff / 86400000);
+};
+
+const bibleIndex = dayOfYear(now) % bibleVerses.length;
+const nietzscheIndex = dayOfYear(now) % nietzscheMaxims.length;
+
+const bible = bibleVerses[bibleIndex];
+const nietzsche = nietzscheMaxims[nietzscheIndex];
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+document.getElementById('date-display').textContent =
+  `${dayNames[now.getDay()]}, ${monthNames[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+
+document.getElementById('bible-english').textContent = `"${bible.english}"`;
+document.getElementById('bible-reference').textContent = `— ${bible.ref}`;
+document.getElementById('bible-lang-label').textContent = `Original ${bible.lang}`;
+document.getElementById('bible-original').textContent = bible.original;
+
+document.getElementById('nietzsche-english').textContent = `"${nietzsche.english}"`;
+document.getElementById('nietzsche-reference').textContent = `— ${nietzsche.ref}`;
+document.getElementById('nietzsche-original').textContent = nietzsche.german;
+
+// ─── SERVICE WORKER ───────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
